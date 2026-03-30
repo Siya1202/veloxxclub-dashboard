@@ -34,7 +34,7 @@ export default function Login({ onLogin }) {
 
         <p className="login-tagline">Admin Login</p>
 
-        <form onSubmit={handleSubmit} className="login-form">
+        <form onSubmit={handleSubmit}  className="login-form">
           <div className="field">
             <label htmlFor="email">Email</label>
             <input
