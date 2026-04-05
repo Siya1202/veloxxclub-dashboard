@@ -2,7 +2,7 @@ import { useState } from 'react'
 import './Login.css'
 import veloxxLogo from '../assets/veloxx_posters.png'
 import loginBackground from '../assets/WhatsApp Image 2026-03-25 at 12.43.06.jpeg'
-import { admins } from '../data/mockDatabase'
+import { members } from '../data/mockDatabase'
 
 export default function Login({ onLogin }) {
   const [email, setEmail]       = useState('')
@@ -11,14 +11,18 @@ export default function Login({ onLogin }) {
 
   function handleSubmit(e) {
     e.preventDefault()
-    const match = admins.find(
-      a => a.email === email.trim() && a.password === password
+
+    const adminMatch = members.find(
+      (member) => member.role === 'admin' && member.email === email.trim() && member.password === password,
     )
-    if (match) {
-      onLogin(match)
-    } else {
-      setError('Invalid email or password.')
+
+    if (!adminMatch) {
+      setError('Invalid admin email or password.')
+      return
     }
+
+    setError('')
+    onLogin(adminMatch)
   }
 
   return (

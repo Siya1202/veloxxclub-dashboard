@@ -116,13 +116,6 @@ export const attendance = [
   { reg_id: 20, attended: 0 },
 ]
 
-export const admins = members
-  .filter((member) => member.role === 'admin')
-  .map(({ password, ...member }) => ({
-    ...member,
-    password: password ?? 'admin123',
-  }))
-
 export const eventSummary = events
   .map((event) => {
     const eventRegistrations = registrations.filter((registration) => registration.e_id === event.e_id)
@@ -140,4 +133,3 @@ export const eventSummary = events
     }
   })
   .filter((event) => event.total_registered > 0)
-
