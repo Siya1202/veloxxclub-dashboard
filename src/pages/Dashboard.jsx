@@ -68,6 +68,8 @@ const TABLE_ENDPOINTS = [
   { key: "eventsummary", endpoint: "eventsummary" },
 ];
 
+const CREATE_BUTTON_TABS = new Set(["members", "events", "registrations", "attendance"]);
+
 function renderCell(row, column) {
   const value = row[column.key];
 
@@ -128,6 +130,7 @@ export default function Dashboard({ onLogout, currentAdmin }) {
   const [formSuccess, setFormSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   async function loadDashboardData() {
     const responses = await Promise.all(
@@ -153,6 +156,7 @@ export default function Dashboard({ onLogout, currentAdmin }) {
     setFormMode("create");
     setSelectedRecordId(null);
     setFormValues(buildInitialFormState(nextTab));
+    setShowCreateForm(!CREATE_BUTTON_TABS.has(nextTab));
   }
 
   useEffect(() => {
@@ -166,6 +170,19 @@ export default function Dashboard({ onLogout, currentAdmin }) {
     setFormError("");
     setFormSuccess("");
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!formError && !formSuccess) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setFormError("");
+      setFormSuccess("");
+    }, 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [formError, formSuccess]);
 
   const tableConfig = {
     members: {
@@ -260,6 +277,8 @@ export default function Dashboard({ onLogout, currentAdmin }) {
   const currentTable = tableConfig[activeTab];
   const currentFormConfig = FORM_CONFIG[activeTab];
   const canMutateCurrentTable = Boolean(currentFormConfig);
+  const requiresExplicitCreate = CREATE_BUTTON_TABS.has(activeTab);
+  const shouldShowForm = canMutateCurrentTable && (formMode === "edit" || !requiresExplicitCreate || showCreateForm);
 
   function handleFieldChange(fieldKey, value) {
     setFormValues((current) => ({
@@ -276,6 +295,7 @@ export default function Dashboard({ onLogout, currentAdmin }) {
     }
 
     setFormMode("edit");
+    setShowCreateForm(true);
     setSelectedRecordId(row[currentFormConfig.primaryKey]);
     setFormValues(rowToFormState(currentFormConfig.fields, row));
     setFormError("");
@@ -411,15 +431,33 @@ export default function Dashboard({ onLogout, currentAdmin }) {
           </article>
         </section>
 
-        <section className="admin-layout">
+        <section className={`admin-layout ${!shouldShowForm ? "admin-layout--single" : ""}`}>
           <section className="admin-panel">
             <div className="admin-panel__header">
               <div>
                 <h2 className="admin-panel__title">{currentTable.title}</h2>
                 <p className="admin-panel__subtitle">{currentTable.subtitle}</p>
               </div>
-              <div className="admin-panel__badge">
-                {currentTable.rows.length} rows
+              <div className="admin-panel__header-actions">
+                {requiresExplicitCreate && canMutateCurrentTable && formMode === "create" && !showCreateForm && (
+                  <button
+                    type="button"
+                    className="record-form__submit admin-panel__primary-action"
+                    onClick={() => {
+                      setShowCreateForm(true);
+                      setFormError("");
+                      setFormSuccess("");
+                    }}
+                  >
+                    {activeTab === "members"
+                      ? "Add New Member"
+                      : activeTab === "events"
+                        ? "Add New Event"
+                        : activeTab === "registrations"
+                          ? "Add New Registration"
+                          : "Add New Attendance"}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -475,6 +513,7 @@ export default function Dashboard({ onLogout, currentAdmin }) {
             </div>
           </section>
 
+          {shouldShowForm ? (
           <aside className="admin-panel admin-panel--form">
             <div className="admin-panel__header admin-panel__header--stacked">
               <div>
@@ -489,9 +528,9 @@ export default function Dashboard({ onLogout, currentAdmin }) {
                     : "This tab is read-only because it comes from a SQL view."}
                 </p>
               </div>
-              {canMutateCurrentTable && formMode === "edit" && (
+              {canMutateCurrentTable && (
                 <button type="button" className="record-form__reset" onClick={() => resetForm(activeTab)}>
-                  Cancel editing
+                  {formMode === "edit" ? "Cancel editing" : "Close form"}
                 </button>
               )}
             </div>
@@ -560,6 +599,7 @@ export default function Dashboard({ onLogout, currentAdmin }) {
               </div>
             )}
           </aside>
+          ) : null}
         </section>
       </main>
     </div>
